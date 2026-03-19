@@ -3,6 +3,8 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
+from amos_abk.planar import indexed_to_rgb, indexed_to_rgba, planar_to_indexed
+
 
 @dataclass
 class Sprite:
@@ -25,50 +27,18 @@ class Sprite:
 
         Returns one byte per pixel, each byte being a palette index.
         """
-        width_bytes = (self.width + 7) // 8
-        row_stride = width_bytes
-        result = bytearray(self.width * self.height)
-
-        for y in range(self.height):
-            for x in range(self.width):
-                byte_idx = y * row_stride + x // 8
-                bit = 7 - (x % 8)
-                index = 0
-                for plane_num in range(self.num_planes):
-                    if self.planes[plane_num][byte_idx] & (1 << bit):
-                        index |= 1 << plane_num
-                result[y * self.width + x] = index
-
-        return bytes(result)
+        return planar_to_indexed(self.planes, self.width, self.height)
 
     def to_rgb(self) -> bytes:
         """Convert to RGB pixel data (3 bytes per pixel)."""
-        indexed = self.to_indexed()
-        result = bytearray(len(indexed) * 3)
-        for i, idx in enumerate(indexed):
-            r, g, b = self.palette[idx] if idx < len(self.palette) else (0, 0, 0)
-            result[i * 3] = r
-            result[i * 3 + 1] = g
-            result[i * 3 + 2] = b
-        return bytes(result)
+        return indexed_to_rgb(self.to_indexed(), self.palette)
 
     def to_rgba(self) -> bytes:
         """Convert to RGBA pixel data (4 bytes per pixel).
 
         Palette index 0 is treated as transparent.
         """
-        indexed = self.to_indexed()
-        result = bytearray(len(indexed) * 4)
-        for i, idx in enumerate(indexed):
-            if idx == 0:
-                result[i * 4 : i * 4 + 4] = b"\x00\x00\x00\x00"
-            else:
-                r, g, b = self.palette[idx] if idx < len(self.palette) else (0, 0, 0)
-                result[i * 4] = r
-                result[i * 4 + 1] = g
-                result[i * 4 + 2] = b
-                result[i * 4 + 3] = 255
-        return bytes(result)
+        return indexed_to_rgba(self.to_indexed(), self.palette)
 
 
 def _parse_palette(data: bytes, offset: int) -> list[tuple[int, int, int]]:
