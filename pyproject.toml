@@ -3,7 +3,7 @@ name = "amos_abk"
 description = "Load AMOS banks in Python"
 version = "0.1.0"
 authors = [
-    { name = "Random Hacker", email = "no@dev.null" }
+    { name = "Gareth Davidson", email = "gaz@bitplane.net" }
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,6 +11,11 @@ requires-python = ">=3.10"
 dependencies = [
     "Pillow",
 ]
+
+[project.urls]
+Homepage = "https://bitplane.net/dev/python/amos-abk"
+Documentation = "https://bitplane.net/dev/python/amos-abk/pydoc"
+Repository = "https://github.com/bitplane/amos-abk"
 
 [project.optional-dependencies]
 dev = [
@@ -21,9 +26,7 @@ dev = [
     "build",
     "twine",
     "ruff",
-    "mkdocs",
-    "mkdocs-material",
-    "pydoc-markdown"
+    "pydoc-markdown",
 ]
 
 [build-system]
