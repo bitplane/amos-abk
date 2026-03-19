@@ -93,3 +93,24 @@ def test_flags():
     abk = load(DATA_DIR / "pacpic.abk")
     pic = parse_packed_picture(abk.banks[0].data)
     assert pic.flags == 0x00E2
+
+
+def test_to_image():
+    from PIL import Image
+
+    abk = load(DATA_DIR / "pacpic.abk")
+    pic = parse_packed_picture(abk.banks[0].data)
+    img = pic.to_image()
+    assert isinstance(img, Image.Image)
+    assert img.mode == "RGB"
+    assert img.size == (pic.width, pic.height)
+
+
+def test_to_image_larger():
+    from PIL import Image
+
+    abk = load(DATA_DIR / "pacpic_320x200.abk")
+    pic = parse_packed_picture(abk.banks[0].data)
+    img = pic.to_image()
+    assert isinstance(img, Image.Image)
+    assert img.size == (320, 200)

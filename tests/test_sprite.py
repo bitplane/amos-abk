@@ -103,3 +103,26 @@ def test_planes_stored_separately():
     plane_size = (s.width // 8) * s.height
     for plane in s.planes:
         assert len(plane) == plane_size
+
+
+def test_to_image():
+    from PIL import Image
+
+    abk = load(DATA_DIR / "multi_sprites.abk")
+    sprites = parse_sprites(abk.banks[0].data)
+    img = sprites[0].to_image()
+    assert isinstance(img, Image.Image)
+    assert img.mode == "RGBA"
+    assert img.size == (sprites[0].width, sprites[0].height)
+
+
+def test_to_image_transparency():
+    """Palette index 0 pixels should be fully transparent in the image."""
+    abk = load(DATA_DIR / "multi_sprites.abk")
+    s = parse_sprites(abk.banks[0].data)[0]
+    img = s.to_image()
+    indexed = s.to_indexed()
+    for i, idx in enumerate(indexed):
+        x, y = i % s.width, i // s.width
+        _, _, _, a = img.getpixel((x, y))
+        assert (a == 0) == (idx == 0)

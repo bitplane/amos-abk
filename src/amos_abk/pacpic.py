@@ -13,6 +13,8 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
+from PIL import Image
+
 from amos_abk.planar import indexed_to_rgb, indexed_to_rgba, planar_to_indexed
 from amos_abk.sprite import _parse_palette
 
@@ -56,6 +58,10 @@ class PackedPicture:
         Palette index 0 is treated as transparent.
         """
         return indexed_to_rgba(self.to_indexed(), self.palette)
+
+    def to_image(self) -> Image.Image:
+        """Convert to a PIL Image (RGB)."""
+        return Image.frombytes("RGB", (self.width, self.height), self.to_rgb())
 
 
 def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], int, int, int]:

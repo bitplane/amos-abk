@@ -3,6 +3,8 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
+from PIL import Image
+
 from amos_abk.planar import indexed_to_rgb, indexed_to_rgba, planar_to_indexed
 
 
@@ -39,6 +41,10 @@ class Sprite:
         Palette index 0 is treated as transparent.
         """
         return indexed_to_rgba(self.to_indexed(), self.palette)
+
+    def to_image(self) -> Image.Image:
+        """Convert to a PIL Image (RGBA, palette index 0 is transparent)."""
+        return Image.frombytes("RGBA", (self.width, self.height), self.to_rgba())
 
 
 def _parse_palette(data: bytes, offset: int) -> list[tuple[int, int, int]]:
