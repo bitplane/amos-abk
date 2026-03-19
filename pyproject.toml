@@ -1,6 +1,6 @@
 [project]
-name = "example_package"
-description = "example package"
+name = "amos_abk"
+description = "Load AMOS banks in Python"
 version = "0.1.0"
 authors = [
     { name = "Random Hacker", email = "no@dev.null" }
