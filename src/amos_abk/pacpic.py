@@ -25,6 +25,7 @@ PACKED_BITMAP_MAGIC = 0x06071963
 PACKED_BITMAP_MAGIC_ALT = 0x06070063
 
 SCREEN_HEADER_SIZE = 90
+MAX_DECOMPRESSED_SIZE = 256 * 1024 * 1024
 
 
 @dataclass
@@ -91,6 +92,22 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     height = lumps * lump_height
     width_pixels = width_bytes * 8
 
+    if not width_bytes or not height or not num_planes:
+        raise ValueError(f"Invalid packed bitmap dimensions: {width_pixels}x{height}, {num_planes} planes")
+
+    plane_size = width_bytes * height
+    decompressed_size = plane_size * num_planes
+    if decompressed_size > MAX_DECOMPRESSED_SIZE:
+        raise ValueError(
+            f"Packed bitmap is too large: {decompressed_size} decompressed bytes " f"(maximum {MAX_DECOMPRESSED_SIZE})"
+        )
+
+    stream_start = packed_offset + 24
+    for stream_name, stream_offset in (("RLEDATA", rledata_offset), ("POINTS", points_offset)):
+        absolute_offset = packed_offset + stream_offset
+        if absolute_offset < stream_start or absolute_offset >= len(data):
+            raise ValueError(f"Invalid {stream_name} offset: {stream_offset}")
+
     # Stream positions (offsets are relative to packed bitmap header start)
     picdata = memoryview(data)[packed_offset + 24 :]
     rledata = memoryview(data)[packed_offset + rledata_offset :]
@@ -115,7 +132,6 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
         rle_pos += 1
 
     # Allocate output plane buffers
-    plane_size = width_bytes * height
     plane_bufs = [bytearray(plane_size) for _ in range(num_planes)]
 
     # Decompress: iterate in plane/lump/column/row order
