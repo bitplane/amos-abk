@@ -99,7 +99,7 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     decompressed_size = plane_size * num_planes
     if decompressed_size > MAX_DECOMPRESSED_SIZE:
         raise ValueError(
-            f"Packed bitmap is too large: {decompressed_size} decompressed bytes " f"(maximum {MAX_DECOMPRESSED_SIZE})"
+            f"Packed bitmap is too large: {decompressed_size} decompressed bytes (maximum {MAX_DECOMPRESSED_SIZE})"
         )
 
     stream_start = packed_offset + 24
