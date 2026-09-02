@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from PIL import Image
+import pytest
+from PIL import Image, UnidentifiedImageError
 
 import amos_abk
 
@@ -54,12 +55,9 @@ def test_abk_in_info():
 
 
 def test_non_image_bank_raises():
-    """Banks with no image data should raise SyntaxError."""
-    try:
+    """Pillow should reject banks with no image data."""
+    with pytest.raises(UnidentifiedImageError):
         Image.open(DATA_DIR / "music.abk")
-        assert False, "Should have raised"
-    except Exception:
-        pass
 
 
 def test_images_from_path():
