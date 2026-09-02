@@ -85,7 +85,7 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     if magic not in (PACKED_BITMAP_MAGIC, PACKED_BITMAP_MAGIC_ALT):
         raise ValueError(f"Bad packed bitmap magic: 0x{magic:08x}")
 
-    (x_offset, y_offset, width_bytes, lumps, lump_height, num_planes, rledata_offset, points_offset) = (
+    (_x_offset, _y_offset, width_bytes, lumps, lump_height, num_planes, rledata_offset, points_offset) = (
         struct.unpack_from(">HHHHHHII", data, packed_offset + 4)
     )
 
@@ -205,7 +205,10 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
     else:
         raise ValueError(f"Unknown Pac.Pic. magic: 0x{magic:08x}")
 
-    planes, width_pixels, height, num_planes = _decompress_bitmap(data, packed_offset)
+    try:
+        planes, width_pixels, height, num_planes = _decompress_bitmap(data, packed_offset)
+    except (IndexError, struct.error) as exc:
+        raise ValueError("Truncated Pac.Pic. compressed data") from exc
 
     # Use screen header dimensions if available, otherwise derive from packed bitmap
     if screen_width == 0:

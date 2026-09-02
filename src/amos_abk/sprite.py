@@ -77,12 +77,15 @@ def parse_sprites(data: bytes) -> list[Sprite]:
         return []
 
     # Palette is at the end: 32 entries * 2 bytes = 64 bytes
-    palette = _parse_palette(data, len(data) - 64)
+    palette_offset = len(data) - 64
+    if palette_offset < 2:
+        raise ValueError(f"Sprite data too short for palette: {len(data)} bytes")
+    palette = _parse_palette(data, palette_offset)
 
     sprites = []
     offset = 2
     for i in range(num_images):
-        if offset + 10 > len(data):
+        if offset + 10 > palette_offset:
             raise ValueError(f"Truncated sprite header at image {i}, offset {offset}")
 
         w_words, h, num_planes, hx, hy = struct.unpack_from(">HHHHH", data, offset)
@@ -92,10 +95,10 @@ def parse_sprites(data: bytes) -> list[Sprite]:
         plane_size = w_words * 2 * h  # bytes per bitplane
         total_size = plane_size * num_planes
 
-        if offset + total_size > len(data):
+        if offset + total_size > palette_offset:
             raise ValueError(
                 f"Truncated sprite data at image {i}: need {total_size} bytes at offset {offset}, "
-                f"but only {len(data) - offset} remain"
+                f"but only {palette_offset - offset} remain before the palette"
             )
 
         planes = []

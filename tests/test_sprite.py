@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from amos_abk import load, parse_sprites
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -126,3 +128,8 @@ def test_to_image_transparency():
         x, y = i % s.width, i // s.width
         _, _, _, a = img.getpixel((x, y))
         assert (a == 0) == (idx == 0)
+
+
+def test_truncated_palette_raises_value_error():
+    with pytest.raises(ValueError, match="too short for palette"):
+        parse_sprites(b"\x00\x01")

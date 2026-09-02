@@ -133,3 +133,11 @@ def test_rejects_invalid_stream_offsets():
 
     with pytest.raises(ValueError, match="Invalid RLEDATA offset"):
         parse_packed_picture(bytes(data))
+
+
+def test_truncated_compressed_data_raises_value_error():
+    data = bytearray(27)
+    struct.pack_into(">IHHHHHHII", data, 0, 0x06071963, 0, 0, 1, 1, 129, 1, 24, 25)
+
+    with pytest.raises(ValueError, match="Truncated Pac.Pic"):
+        parse_packed_picture(bytes(data))
