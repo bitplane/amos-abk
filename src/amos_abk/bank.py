@@ -130,8 +130,13 @@ def _load_stream(stream: BytesIO) -> AbkFile:
         while True:
             banks.append(_read_ambk_bank(stream))
             next_magic = stream.read(4)
-            if len(next_magic) < 4:
+            if not next_magic:
                 break
+            if len(next_magic) < 4:
+                raise ValueError(
+                    f"Truncated bank magic at offset {stream.tell() - len(next_magic)}: "
+                    f"expected 4 bytes, got {len(next_magic)}"
+                )
             if next_magic != MAGIC_AMBK:
                 raise ValueError(f"Expected AmBk magic at offset {stream.tell() - 4}, got {next_magic!r}")
             stream.seek(stream.tell() - 4)

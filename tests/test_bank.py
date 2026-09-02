@@ -123,6 +123,14 @@ def test_multi_bank_synthetic():
     assert abk.banks[1].data == raw_samples[20:]
 
 
+@pytest.mark.parametrize("suffix", [b"\x00", b"\x00\x00", b"\x00\x00\x00"])
+def test_rejects_truncated_trailing_bank_magic(suffix):
+    raw = (DATA_DIR / "music.abk").read_bytes()
+
+    with pytest.raises(ValueError, match="Truncated bank magic"):
+        load(BytesIO(raw + suffix))
+
+
 def test_repr():
     abk = load(DATA_DIR / "sprites.abk")
     assert "Sprites" in repr(abk)
