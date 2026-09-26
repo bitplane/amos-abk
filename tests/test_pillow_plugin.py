@@ -60,6 +60,21 @@ def test_seek_updates_size():
     assert img.size == (16, 1)
 
 
+def test_empty_sprite_slots_skipped():
+    raw = _sprite_bank((0, 0), (2, 3), (0, 0))
+    imgs = amos_abk.images(BytesIO(raw))
+    assert [img.size for img in imgs] == [(32, 3)]
+
+    img = Image.open(BytesIO(raw))
+    assert img.n_frames == 1
+    assert img.size == (32, 3)
+
+
+def test_only_empty_sprite_slots_raises():
+    with pytest.raises(UnidentifiedImageError):
+        Image.open(BytesIO(_sprite_bank((0, 0))))
+
+
 def test_tell():
     img = Image.open(DATA_DIR / "multi_sprites.abk")
     assert img.tell() == 0

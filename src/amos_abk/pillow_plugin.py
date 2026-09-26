@@ -3,7 +3,8 @@
 Registers the ABK format so that ``Image.open("file.abk")`` works
 after ``import amos_abk``.
 
-Sprite and icon banks produce one frame per image (RGBA, index 0 transparent).
+Sprite and icon banks produce one frame per image (RGBA, index 0 transparent),
+skipping empty slots.
 Pac.Pic. banks produce one frame per picture (RGBA).
 Non-image banks (music, samples, amal, data) are skipped.
 """
@@ -33,7 +34,9 @@ def _build_frames(abk: AbkFile) -> list[Image.Image]:
     for bank in abk.banks:
         if bank.name in _SPRITE_NAMES:
             for sprite in parse_sprites(bank.data):
-                frames.append(sprite.to_image())
+                # Deleted images are stored as empty slots; there's nothing to show
+                if sprite.width and sprite.height:
+                    frames.append(sprite.to_image())
         elif bank.name == "Pac.Pic.":
             pic = parse_packed_picture(bank.data)
             frames.append(pic.to_image().convert("RGBA"))
@@ -48,7 +51,9 @@ def images(source) -> list[Image.Image]:
 
     Returns:
         List of PIL Images (RGBA). Sprites and icons get one image each,
-        packed pictures get one image. Non-image banks are skipped.
+        packed pictures get one image. Non-image banks and empty sprite
+        slots are skipped, so use parse_sprites() when AMOS image numbers
+        matter.
     """
     if isinstance(source, AbkFile):
         return _build_frames(source)
