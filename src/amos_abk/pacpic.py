@@ -71,21 +71,11 @@ class PackedPicture:
         return Image.frombytes("RGB", (self.width, self.height), self.to_rgb())
 
 
-def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], int, int, int]:
-    """Decompress a packed bitmap from three interleaved RLE streams.
-
-    The three streams are:
-    - PICDATA: the actual pixel bytes
-    - RLEDATA: 1 bit per output byte; bit=1 means read new PICDATA byte, 0=repeat
-    - POINTS: 1 bit per RLEDATA byte; bit=1 means read new RLEDATA byte, 0=repeat
-
-    Args:
-        data: raw data containing the packed bitmap.
-        packed_offset: offset to the packed bitmap header (0x06071963 magic).
+def _read_bitmap_header(data: bytes, packed_offset: int) -> tuple[int, int, int, int, int, int]:
+    """Read and validate a packed bitmap header.
 
     Returns:
-        (planes, width_pixels, height, num_planes) where planes is a list of
-        bytes objects, one per bitplane, in row-major order.
+        (width_bytes, lumps, lump_height, num_planes, rledata_offset, points_offset)
     """
     magic = struct.unpack_from(">I", data, packed_offset)[0]
     if magic not in (PACKED_BITMAP_MAGIC, PACKED_BITMAP_MAGIC_ALT):
@@ -103,12 +93,37 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     if num_planes > MAX_PLANES:
         raise ValueError(f"Too many bitplanes in packed bitmap: {num_planes} (maximum {MAX_PLANES})")
 
-    plane_size = width_bytes * height
-    decompressed_size = plane_size * num_planes
+    decompressed_size = width_bytes * height * num_planes
     if decompressed_size > MAX_DECOMPRESSED_SIZE:
         raise ValueError(
             f"Packed bitmap is too large: {decompressed_size} decompressed bytes (maximum {MAX_DECOMPRESSED_SIZE})"
         )
+
+    return width_bytes, lumps, lump_height, num_planes, rledata_offset, points_offset
+
+
+def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], int, int, int]:
+    """Decompress a packed bitmap from three interleaved RLE streams.
+
+    The three streams are:
+    - PICDATA: the actual pixel bytes
+    - RLEDATA: 1 bit per output byte; bit=1 means read new PICDATA byte, 0=repeat
+    - POINTS: 1 bit per RLEDATA byte; bit=1 means read new RLEDATA byte, 0=repeat
+
+    Args:
+        data: raw data containing the packed bitmap.
+        packed_offset: offset to the packed bitmap header (0x06071963 magic).
+
+    Returns:
+        (planes, width_pixels, height, num_planes) where planes is a list of
+        bytes objects, one per bitplane, in row-major order.
+    """
+    width_bytes, lumps, lump_height, num_planes, rledata_offset, points_offset = _read_bitmap_header(
+        data, packed_offset
+    )
+    height = lumps * lump_height
+    width_pixels = width_bytes * 8
+    plane_size = width_bytes * height
 
     stream_start = packed_offset + 24
     for stream_name, stream_offset in (("RLEDATA", rledata_offset), ("POINTS", points_offset)):
@@ -178,6 +193,30 @@ def _greyscale_palette(num_planes: int) -> list[tuple[int, int, int]]:
     return [(g, g, g) for g in greys]
 
 
+def _packed_bitmap_offset(data: bytes) -> int:
+    """Return the offset of the packed bitmap: after the screen header if there is one."""
+    if len(data) < 24:
+        raise ValueError(f"Pac.Pic. data too short: {len(data)} bytes")
+
+    magic = struct.unpack_from(">I", data, 0)[0]
+
+    if magic in (SCREEN_HEADER_MAGIC, SCREEN_HEADER_MAGIC_ALT1, SCREEN_HEADER_MAGIC_ALT2):
+        if len(data) < SCREEN_HEADER_SIZE + 24:
+            raise ValueError(f"Pac.Pic. data too short for screen header: {len(data)} bytes")
+        return SCREEN_HEADER_SIZE
+
+    if magic in (PACKED_BITMAP_MAGIC, PACKED_BITMAP_MAGIC_ALT):
+        return 0
+
+    raise ValueError(f"Unknown Pac.Pic. magic: 0x{magic:08x}")
+
+
+def _packed_picture_size(data: bytes) -> tuple[int, int]:
+    """Return a Pac.Pic.'s (width, height) in pixels without decompressing it."""
+    width_bytes, lumps, lump_height, *_ = _read_bitmap_header(data, _packed_bitmap_offset(data))
+    return width_bytes * 8, lumps * lump_height
+
+
 def parse_packed_picture(data: bytes) -> PackedPicture:
     """Parse a Pac.Pic. bank's raw data.
 
@@ -188,24 +227,16 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
     Returns:
         A PackedPicture with decompressed bitplane data.
     """
-    if len(data) < 24:
-        raise ValueError(f"Pac.Pic. data too short: {len(data)} bytes")
+    packed_offset = _packed_bitmap_offset(data)
 
-    magic = struct.unpack_from(">I", data, 0)[0]
-
-    if magic in (SCREEN_HEADER_MAGIC, SCREEN_HEADER_MAGIC_ALT1, SCREEN_HEADER_MAGIC_ALT2):
-        if len(data) < SCREEN_HEADER_SIZE + 24:
-            raise ValueError(f"Pac.Pic. data too short for screen header: {len(data)} bytes")
-
+    if packed_offset:
         screen_width, screen_height = struct.unpack_from(">HH", data, 4)
         display_width, display_height = struct.unpack_from(">HH", data, 12)
         flags = struct.unpack_from(">H", data, 20)[0]  # BPLCON0 screen mode
         palette = _parse_palette(data, 26)
-        packed_offset = SCREEN_HEADER_SIZE
 
-    elif magic in (PACKED_BITMAP_MAGIC, PACKED_BITMAP_MAGIC_ALT):
+    else:
         # Bare packed bitmap without screen header
-        packed_offset = 0
         num_planes_from_header = struct.unpack_from(">H", data, 14)[0]
         palette = _greyscale_palette(num_planes_from_header)
         screen_width = 0
@@ -214,9 +245,6 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         display_height = 0
         # No screen mode stored, so guess BPLCON0 from the plane count (as dumpamos does)
         flags = (num_planes_from_header << 12 | 0x200) & 0xFFFF
-
-    else:
-        raise ValueError(f"Unknown Pac.Pic. magic: 0x{magic:08x}")
 
     try:
         planes, width_pixels, height, num_planes = _decompress_bitmap(data, packed_offset)

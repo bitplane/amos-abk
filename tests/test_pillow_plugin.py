@@ -125,3 +125,36 @@ def test_images_pacpic():
     imgs = amos_abk.images(DATA_DIR / "pacpic_320x200.abk")
     assert len(imgs) == 1
     assert imgs[0].size == (320, 200)
+
+
+def test_open_does_not_decode(monkeypatch):
+    from amos_abk import pillow_plugin
+
+    calls = []
+    real = pillow_plugin.parse_packed_picture
+    monkeypatch.setattr(pillow_plugin, "parse_packed_picture", lambda data: calls.append(1) or real(data))
+
+    img = Image.open(DATA_DIR / "pacpic_320x200.abk")
+    assert img.size == (320, 200)
+    assert calls == []
+
+    img.load()
+    img.load()
+    assert calls == [1]
+
+
+def test_frames_match_images_after_seeking():
+    expected = [im.tobytes() for im in amos_abk.images(DATA_DIR / "multi_sprites.abk")]
+    img = Image.open(DATA_DIR / "multi_sprites.abk")
+    for i in [0, 3, 5, 1, 0]:
+        img.seek(i)
+        assert img.tobytes() == expected[i]
+
+
+def test_decode_error_on_load_raises_oserror():
+    raw = bytearray((DATA_DIR / "pacpic.abk").read_bytes())
+    # Point the POINTS stream at the last byte so decompression runs off the end
+    struct.pack_into(">I", raw, 20 + 90 + 20, len(raw) - 20 - 90 - 1)
+    img = Image.open(BytesIO(bytes(raw)))
+    with pytest.raises(OSError, match="Truncated"):
+        img.load()
