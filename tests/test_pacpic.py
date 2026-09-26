@@ -92,10 +92,19 @@ def test_decompressed_not_all_zeros():
     assert total_nonzero > 0
 
 
-def test_flags():
-    abk = load(DATA_DIR / "pacpic.abk")
+@pytest.mark.parametrize("name, bplcon0", [("pacpic.abk", 0x4200), ("pacpic_320x200.abk", 0x3000)])
+def test_flags(name, bplcon0):
+    """flags holds the screen's BPLCON0 value (plane count in bits 12-14, colour in bit 9)."""
+    abk = load(DATA_DIR / name)
     pic = parse_packed_picture(abk.banks[0].data)
-    assert pic.flags == 0x00E2
+    assert pic.flags == bplcon0
+
+
+def test_bare_bitmap_guesses_flags():
+    abk = load(DATA_DIR / "pacpic.abk")
+    bare = abk.banks[0].data[90:]
+    pic = parse_packed_picture(bare)
+    assert pic.flags == 0x4200
 
 
 def test_to_image():

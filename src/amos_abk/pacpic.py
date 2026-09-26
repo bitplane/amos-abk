@@ -182,8 +182,9 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         if len(data) < SCREEN_HEADER_SIZE + 24:
             raise ValueError(f"Pac.Pic. data too short for screen header: {len(data)} bytes")
 
-        screen_width, screen_height, flags, _unknown = struct.unpack_from(">HHHH", data, 4)
+        screen_width, screen_height = struct.unpack_from(">HH", data, 4)
         display_width, display_height = struct.unpack_from(">HH", data, 12)
+        flags = struct.unpack_from(">H", data, 20)[0]  # BPLCON0 screen mode
         num_planes = struct.unpack_from(">H", data, 24)[0]
         palette = _parse_palette(data, 26)
         packed_offset = SCREEN_HEADER_SIZE
@@ -199,7 +200,8 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         screen_height = 0
         display_width = 0
         display_height = 0
-        flags = 0
+        # No screen mode stored, so guess BPLCON0 from the plane count (as dumpamos does)
+        flags = (num_planes_from_header << 12 | 0x200) & 0xFFFF
         num_planes = num_planes_from_header
 
     else:
