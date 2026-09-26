@@ -61,7 +61,7 @@ def images(source) -> list[Image.Image]:
     """Extract all images from an ABK file.
 
     Args:
-        source: file path (str/Path), BytesIO, or an already-loaded AbkFile.
+        source: file path (str/Path), bytes, a binary stream, or an already-loaded AbkFile.
 
     Returns:
         List of PIL Images (RGBA). Sprites and icons get one image each,
