@@ -18,6 +18,8 @@ from PIL import Image
 from amos_abk.planar import indexed_to_rgb, indexed_to_rgba, planar_to_indexed
 from amos_abk.sprite import _parse_palette
 
+# The magics are dates (12/03/1990 and 06/07/1963). The ALT variants have a
+# byte zeroed; amostools' dumpamos.c accepts them too, so we do the same.
 SCREEN_HEADER_MAGIC = 0x12031990
 SCREEN_HEADER_MAGIC_ALT1 = 0x00031990
 SCREEN_HEADER_MAGIC_ALT2 = 0x12030090
