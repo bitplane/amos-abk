@@ -1,7 +1,7 @@
 [project]
 name = "amos_abk"
 description = "Load AMOS banks in Python"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
     { name = "Gareth Davidson", email = "gaz@bitplane.net" }
 ]
