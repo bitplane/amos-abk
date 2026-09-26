@@ -165,6 +165,13 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     return [bytes(p) for p in plane_bufs], width_pixels, height, num_planes
 
 
+def _greyscale_palette(num_planes: int) -> list[tuple[int, int, int]]:
+    """Fallback 32-entry palette ramping from black to white over the image's colours."""
+    top = max(min(1 << num_planes, 32) - 1, 1)
+    greys = [min(i * 255 // top, 255) for i in range(32)]
+    return [(g, g, g) for g in greys]
+
+
 def parse_packed_picture(data: bytes) -> PackedPicture:
     """Parse a Pac.Pic. bank's raw data.
 
@@ -194,9 +201,7 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         # Bare packed bitmap without screen header
         packed_offset = 0
         num_planes_from_header = struct.unpack_from(">H", data, 14)[0]
-        palette = [(((i & 0xF) * 0x111 >> 8) & 0xF) * 17 for i in range(32)]
-        # Generate a greyscale fallback palette
-        palette = [((i * 17) % 256, (i * 17) % 256, (i * 17) % 256) for i in range(32)]
+        palette = _greyscale_palette(num_planes_from_header)
         screen_width = 0
         screen_height = 0
         display_width = 0

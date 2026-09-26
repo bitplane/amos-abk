@@ -158,3 +158,13 @@ def test_truncated_compressed_data_raises_value_error():
 
     with pytest.raises(ValueError, match="Truncated Pac.Pic"):
         parse_packed_picture(bytes(data))
+
+
+def test_bare_bitmap_greyscale_palette():
+    abk = load(DATA_DIR / "pacpic.abk")
+    pic = parse_packed_picture(abk.banks[0].data[90:])
+    greys = [r for r, g, b in pic.palette[:16]]
+    assert greys[0] == 0
+    assert greys[15] == 255
+    assert greys == sorted(greys)
+    assert all(r == g == b for r, g, b in pic.palette)
