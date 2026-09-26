@@ -95,7 +95,8 @@ graphics and other resources in `.abk` memory bank files.
 ### Bank container
 
 Each `.abk` file contains one or more banks, either bare (AmSp/AmIc magic) or
-wrapped in an AmBk header with a bank number, name, and memory type.
+wrapped in an AmBk header with a bank number, name, and memory type. Bank sets
+(AmBs magic, usually `.abs` files) hold a count followed by any mix of these.
 
 ### Sprite and icon banks
 

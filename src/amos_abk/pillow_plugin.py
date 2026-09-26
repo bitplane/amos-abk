@@ -24,7 +24,7 @@ _SPRITE_NAMES = {"Sprites", "Icons"}
 
 
 def _accept(prefix):
-    return prefix[:4] in (b"AmBk", b"AmSp", b"AmIc")
+    return prefix[:4] in (b"AmBk", b"AmBs", b"AmSp", b"AmIc")
 
 
 def _build_frames(abk: AbkFile) -> list[Image.Image]:

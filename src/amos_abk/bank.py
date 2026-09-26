@@ -11,8 +11,10 @@ MAGIC_AMBK = b"AmBk"
 MAGIC_AMSP = b"AmSp"
 MAGIC_AMIC = b"AmIc"
 
-# Known but unsupported magic bytes
+# Bank set: a u16 bank count followed by AmBk/AmSp/AmIc banks
 MAGIC_AMBS = b"AmBs"
+
+# Known but unsupported (compressed) magic bytes
 MAGIC_CRM2 = b"CrM2"
 MAGIC_IMP = b"IMP!"
 MAGIC_PPBK = b"PPbk"
@@ -95,6 +97,45 @@ def _read_bare_bank(stream: BinaryIO, magic: bytes) -> DataBank:
     return DataBank(number=ICON_BANK_NUMBER, name="Icons", memory_type=0, flags=0, data=data)
 
 
+def _read_exact(stream: BinaryIO, size: int, what: str) -> bytes:
+    data = stream.read(size)
+    if len(data) < size:
+        raise ValueError(f"Truncated {what}: expected {size} bytes, got {len(data)}")
+    return data
+
+
+def _read_sized_bare_bank(stream: BinaryIO, magic: bytes) -> DataBank:
+    """Read a bare AmSp or AmIc bank that is followed by more data.
+
+    These banks have no length field, so walk the image headers to find the end.
+    """
+    count_bytes = _read_exact(stream, 2, "sprite bank count")
+    chunks = [count_bytes]
+    for i in range(struct.unpack(">H", count_bytes)[0]):
+        header = _read_exact(stream, 10, f"sprite header {i}")
+        w_words, h, num_planes = struct.unpack_from(">HHH", header)
+        chunks.append(header)
+        chunks.append(_read_exact(stream, w_words * 2 * h * num_planes, f"sprite data {i}"))
+    chunks.append(_read_exact(stream, 64, "sprite palette"))
+    return _read_bare_bank(BytesIO(b"".join(chunks)), magic)
+
+
+def _read_bank_set(stream: BinaryIO) -> list[DataBank]:
+    """Read the banks of an AmBs bank set (magic already consumed)."""
+    count = struct.unpack(">H", _read_exact(stream, 2, "bank set count"))[0]
+    banks = []
+    for i in range(count):
+        magic = _read_exact(stream, 4, f"bank magic for bank {i}")
+        if magic in (MAGIC_AMSP, MAGIC_AMIC):
+            banks.append(_read_sized_bare_bank(stream, magic))
+        elif magic == MAGIC_AMBK:
+            stream.seek(-4, 1)
+            banks.append(_read_ambk_bank(stream))
+        else:
+            raise ValueError(f"Unexpected magic for bank {i} in bank set: {magic!r}")
+    return banks
+
+
 def load(source: str | Path | bytes | BinaryIO) -> AbkFile:
     """Load an AMOS bank file.
 
@@ -121,9 +162,12 @@ def _load_stream(stream: BinaryIO) -> AbkFile:
     if len(magic) < 4:
         raise ValueError(f"File too short: expected at least 4 bytes, got {len(magic)}")
 
-    if magic in (MAGIC_AMBS, MAGIC_CRM2, MAGIC_IMP, MAGIC_PPBK):
+    if magic in (MAGIC_CRM2, MAGIC_IMP, MAGIC_PPBK):
         kind = magic.decode("ascii", errors="replace")
-        raise ValueError(f"Unsupported format: {kind} (not a bank file)")
+        raise ValueError(f"Unsupported format: {kind} (compressed file)")
+
+    if magic == MAGIC_AMBS:
+        return AbkFile(_read_bank_set(stream))
 
     if magic in (MAGIC_AMSP, MAGIC_AMIC):
         bank = _read_bare_bank(stream, magic)

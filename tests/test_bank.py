@@ -67,9 +67,39 @@ def test_load_ambk_pacpic():
     assert bank.number == 9
 
 
-def test_load_ambs_raises():
+def test_load_ambs_bank_set():
+    raw = (DATA_DIR / "basic.abk").read_bytes()
+    abk = load(DATA_DIR / "basic.abk")
+    assert len(abk.banks) == 1
+    bank = abk.banks[0]
+    assert bank.name == "Sprites"
+    assert bank.number == 1
+    assert bank.data == raw[10:]
+
+
+def test_load_ambs_mixed_bank_set():
+    sprites = (DATA_DIR / "sprites.abk").read_bytes()
+    music = (DATA_DIR / "music.abk").read_bytes()
+    icons = (DATA_DIR / "icons.abk").read_bytes()
+    raw = b"AmBs\x00\x03" + sprites + music + icons
+
+    abk = load(raw)
+    assert [b.name for b in abk.banks] == ["Sprites", "Music", "Icons"]
+    assert abk.banks[0].data == sprites[4:]
+    assert abk.banks[1].data == music[20:]
+    assert abk.banks[2].data == icons[4:]
+
+
+def test_load_ambs_truncated():
+    raw = (DATA_DIR / "basic.abk").read_bytes()
+    with pytest.raises(ValueError, match="Truncated"):
+        load(raw[:-1])
+
+
+@pytest.mark.parametrize("magic", [b"CrM2", b"IMP!", b"PPbk"])
+def test_load_compressed_raises(magic):
     with pytest.raises(ValueError, match="Unsupported format"):
-        load(DATA_DIR / "basic.abk")
+        load(magic + bytes(16))
 
 
 def test_load_too_short():

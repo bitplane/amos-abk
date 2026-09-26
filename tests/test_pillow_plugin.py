@@ -54,6 +54,12 @@ def test_abk_in_info():
     assert isinstance(img.info["abk"], amos_abk.AbkFile)
 
 
+def test_open_bank_set():
+    img = Image.open(DATA_DIR / "basic.abk")
+    assert img.format == "ABK"
+    assert img.n_frames == 2
+
+
 def test_non_image_bank_raises():
     """Pillow should reject banks with no image data."""
     with pytest.raises(UnidentifiedImageError):
