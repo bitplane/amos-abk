@@ -168,3 +168,12 @@ def test_bare_bitmap_greyscale_palette():
     assert greys[15] == 255
     assert greys == sorted(greys)
     assert all(r == g == b for r, g, b in pic.palette)
+
+
+def test_rejects_implausibly_large_single_plane():
+    """One plane of 64K x 64K pixels is 512 MiB of bitplane, far past any Amiga screen."""
+    data = bytearray(27)
+    struct.pack_into(">IHHHHHHII", data, 0, 0x06071963, 0, 0, 8192, 8192, 8, 1, 24, 25)
+
+    with pytest.raises(ValueError, match="too large"):
+        parse_packed_picture(bytes(data))

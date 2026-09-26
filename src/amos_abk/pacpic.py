@@ -27,7 +27,9 @@ PACKED_BITMAP_MAGIC = 0x06071963
 PACKED_BITMAP_MAGIC_ALT = 0x06070063
 
 SCREEN_HEADER_SIZE = 90
-MAX_DECOMPRESSED_SIZE = 256 * 1024 * 1024
+# Far beyond any real Amiga screen (1024x1024x8 is 1 MiB of planes), but low
+# enough that a crafted header can't make us build gigabytes of pixels.
+MAX_DECOMPRESSED_SIZE = 4 * 1024 * 1024
 
 
 @dataclass
