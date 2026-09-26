@@ -125,7 +125,7 @@ def _load_stream(stream: BytesIO) -> AbkFile:
         return AbkFile([bank])
 
     if magic == MAGIC_AMBK:
-        stream.seek(0)
+        stream.seek(-4, 1)
         banks = []
         while True:
             banks.append(_read_ambk_bank(stream))
@@ -139,7 +139,7 @@ def _load_stream(stream: BytesIO) -> AbkFile:
                 )
             if next_magic != MAGIC_AMBK:
                 raise ValueError(f"Expected AmBk magic at offset {stream.tell() - 4}, got {next_magic!r}")
-            stream.seek(stream.tell() - 4)
+            stream.seek(-4, 1)
         return AbkFile(banks)
 
     raise ValueError(f"Unknown magic: {magic!r}")

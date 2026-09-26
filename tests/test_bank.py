@@ -131,6 +131,17 @@ def test_rejects_truncated_trailing_bank_magic(suffix):
         load(BytesIO(raw + suffix))
 
 
+def test_load_stream_not_at_start():
+    """Loading should begin at the stream's current position, e.g. a bank embedded in a larger file."""
+    raw = (DATA_DIR / "music.abk").read_bytes()
+    stream = BytesIO(b"JUNK" + raw)
+    stream.seek(4)
+
+    abk = load(stream)
+    assert abk.banks[0].name == "Music"
+    assert abk.banks[0].data == raw[20:]
+
+
 def test_repr():
     abk = load(DATA_DIR / "sprites.abk")
     assert "Sprites" in repr(abk)
