@@ -4,6 +4,7 @@ import struct
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
+from typing import BinaryIO
 
 # Magic bytes for supported bank types
 MAGIC_AMBK = b"AmBk"
@@ -52,7 +53,7 @@ class AbkFile:
         return f"AbkFile([{bank_names}])"
 
 
-def _read_ambk_bank(stream: BytesIO) -> DataBank:
+def _read_ambk_bank(stream: BinaryIO) -> DataBank:
     """Read a single AmBk-wrapped bank from the stream."""
     header = stream.read(AMBK_HEADER_SIZE)
     if len(header) < AMBK_HEADER_SIZE:
@@ -84,7 +85,7 @@ def _read_ambk_bank(stream: BytesIO) -> DataBank:
     )
 
 
-def _read_bare_bank(stream: BytesIO, magic: bytes) -> DataBank:
+def _read_bare_bank(stream: BinaryIO, magic: bytes) -> DataBank:
     """Read a bare AmSp or AmIc bank (no AmBk wrapper)."""
     data = stream.read()
 
@@ -94,11 +95,12 @@ def _read_bare_bank(stream: BytesIO, magic: bytes) -> DataBank:
     return DataBank(number=ICON_BANK_NUMBER, name="Icons", memory_type=0, flags=0, data=data)
 
 
-def load(source: str | Path | BytesIO) -> AbkFile:
+def load(source: str | Path | bytes | BinaryIO) -> AbkFile:
     """Load an AMOS bank file.
 
     Args:
-        source: file path (str or Path) or a readable BytesIO stream.
+        source: file path (str or Path), the file's bytes, or a readable
+            binary stream positioned at the start of the bank data.
 
     Returns:
         An AbkFile containing the parsed banks.
@@ -107,10 +109,13 @@ def load(source: str | Path | BytesIO) -> AbkFile:
         with open(source, "rb") as f:
             return _load_stream(BytesIO(f.read()))
 
+    if isinstance(source, (bytes, bytearray, memoryview)):
+        return _load_stream(BytesIO(source))
+
     return _load_stream(source)
 
 
-def _load_stream(stream: BytesIO) -> AbkFile:
+def _load_stream(stream: BinaryIO) -> AbkFile:
     """Parse banks from a byte stream."""
     magic = stream.read(4)
     if len(magic) < 4:

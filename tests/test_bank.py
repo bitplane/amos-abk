@@ -95,6 +95,13 @@ def test_load_from_bytes_io():
     assert abk.banks[0].name == "Sprites"
 
 
+def test_load_from_bytes():
+    raw = (DATA_DIR / "sprites.abk").read_bytes()
+    abk = load(raw)
+    assert abk.banks[0].name == "Sprites"
+    assert abk.banks[0].data == raw[4:]
+
+
 def test_data_matches_file_contents():
     """Bare sprite bank data should be everything after the 4-byte magic."""
     raw = (DATA_DIR / "sprites.abk").read_bytes()
