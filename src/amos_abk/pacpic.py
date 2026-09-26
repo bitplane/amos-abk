@@ -40,6 +40,8 @@ class PackedPicture:
     flags: int
     palette: list[tuple[int, int, int]]
     planes: list[bytes]
+    screen_width: int
+    screen_height: int
 
     @property
     def num_colors(self) -> int:
@@ -185,7 +187,6 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         screen_width, screen_height = struct.unpack_from(">HH", data, 4)
         display_width, display_height = struct.unpack_from(">HH", data, 12)
         flags = struct.unpack_from(">H", data, 20)[0]  # BPLCON0 screen mode
-        num_planes = struct.unpack_from(">H", data, 24)[0]
         palette = _parse_palette(data, 26)
         packed_offset = SCREEN_HEADER_SIZE
 
@@ -202,7 +203,6 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         display_height = 0
         # No screen mode stored, so guess BPLCON0 from the plane count (as dumpamos does)
         flags = (num_planes_from_header << 12 | 0x200) & 0xFFFF
-        num_planes = num_planes_from_header
 
     else:
         raise ValueError(f"Unknown Pac.Pic. magic: 0x{magic:08x}")
@@ -231,4 +231,6 @@ def parse_packed_picture(data: bytes) -> PackedPicture:
         flags=flags,
         palette=palette,
         planes=planes,
+        screen_width=screen_width,
+        screen_height=screen_height,
     )

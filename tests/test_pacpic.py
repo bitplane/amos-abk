@@ -17,6 +17,14 @@ def test_parse_screen_header():
     assert pic.num_colors == 16
     assert pic.display_width == 160
     assert pic.display_height == 10
+    assert pic.screen_width == 160
+    assert pic.screen_height == 10
+
+
+def test_bare_bitmap_screen_size_from_bitmap():
+    abk = load(DATA_DIR / "pacpic_320x200.abk")
+    pic = parse_packed_picture(abk.banks[0].data[90:])
+    assert (pic.screen_width, pic.screen_height) == (320, 200)
 
 
 def test_palette():
