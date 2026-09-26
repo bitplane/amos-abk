@@ -62,9 +62,9 @@ class PackedPicture:
     def to_rgba(self) -> bytes:
         """Convert to RGBA pixel data (4 bytes per pixel).
 
-        Palette index 0 is treated as transparent.
+        A packed picture is a full screen, so every pixel is opaque.
         """
-        return indexed_to_rgba(self.to_indexed(), self.palette)
+        return indexed_to_rgba(self.to_indexed(), self.palette, transparent_index=None)
 
     def to_image(self) -> Image.Image:
         """Convert to a PIL Image (RGB)."""

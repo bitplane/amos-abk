@@ -5,7 +5,7 @@ after ``import amos_abk``.
 
 Sprite and icon banks produce one frame per image (RGBA, index 0 transparent),
 skipping empty slots.
-Pac.Pic. banks produce one frame per picture (RGBA).
+Pac.Pic. banks produce one frame per picture (RGBA, fully opaque).
 Non-image banks (music, samples, amal, data) are skipped.
 """
 
@@ -39,7 +39,7 @@ def _build_frames(abk: AbkFile) -> list[Image.Image]:
                     frames.append(sprite.to_image())
         elif bank.name == "Pac.Pic.":
             pic = parse_packed_picture(bank.data)
-            frames.append(pic.to_image().convert("RGBA"))
+            frames.append(Image.frombytes("RGBA", (pic.width, pic.height), pic.to_rgba()))
     return frames
 
 

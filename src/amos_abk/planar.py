@@ -45,14 +45,15 @@ def indexed_to_rgb(indexed: bytes, palette: list[tuple[int, int, int]]) -> bytes
     return bytes(result)
 
 
-def indexed_to_rgba(indexed: bytes, palette: list[tuple[int, int, int]]) -> bytes:
+def indexed_to_rgba(indexed: bytes, palette: list[tuple[int, int, int]], transparent_index: int | None = 0) -> bytes:
     """Convert indexed pixel data to RGBA (4 bytes per pixel).
 
-    Palette index 0 is treated as transparent.
+    Pixels using transparent_index are fully transparent; pass None for an
+    opaque image.
     """
     result = bytearray(len(indexed) * 4)
     for i, idx in enumerate(indexed):
-        if idx == 0:
+        if idx == transparent_index:
             result[i * 4 : i * 4 + 4] = b"\x00\x00\x00\x00"
         else:
             r, g, b = palette[idx] if idx < len(palette) else (0, 0, 0)

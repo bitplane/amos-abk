@@ -78,18 +78,14 @@ def test_to_rgba_size():
     assert len(rgba) == pic.width * pic.height * 4
 
 
-def test_to_rgba_transparency():
-    """Palette index 0 should produce fully transparent pixels."""
+def test_to_rgba_opaque():
+    """A packed picture is a full screen, so even palette index 0 is opaque."""
     abk = load(DATA_DIR / "pacpic.abk")
     pic = parse_packed_picture(abk.banks[0].data)
-    indexed = pic.to_indexed()
+    assert 0 in pic.to_indexed()
     rgba = pic.to_rgba()
-    for i, idx in enumerate(indexed):
-        alpha = rgba[i * 4 + 3]
-        if idx == 0:
-            assert alpha == 0
-        else:
-            assert alpha == 255
+    assert set(rgba[3::4]) == {255}
+    assert rgba[0:3] == pic.to_rgb()[0:3]
 
 
 def test_decompressed_not_all_zeros():
