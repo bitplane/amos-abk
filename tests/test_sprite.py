@@ -1,3 +1,4 @@
+import struct
 from pathlib import Path
 
 import pytest
@@ -133,3 +134,9 @@ def test_to_image_transparency():
 def test_truncated_palette_raises_value_error():
     with pytest.raises(ValueError, match="too short for palette"):
         parse_sprites(b"\x00\x01")
+
+
+def test_rejects_too_many_planes():
+    data = struct.pack(">HHHHHH", 1, 1, 1, 9, 0, 0) + b"\xff\xff" * 9 + bytes(64)
+    with pytest.raises(ValueError, match="Too many bitplanes"):
+        parse_sprites(data)

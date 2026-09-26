@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+# AGA tops out at 8 bitplanes, and one byte per indexed pixel can't hold more
+MAX_PLANES = 8
+
 
 def planar_to_indexed(planes: list[bytes], width: int, height: int) -> bytes:
     """Convert planar bitplane data to chunky indexed pixels.

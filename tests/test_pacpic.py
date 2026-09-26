@@ -177,3 +177,11 @@ def test_rejects_implausibly_large_single_plane():
 
     with pytest.raises(ValueError, match="too large"):
         parse_packed_picture(bytes(data))
+
+
+def test_rejects_too_many_planes():
+    data = bytearray(27)
+    struct.pack_into(">IHHHHHHII", data, 0, 0x06071963, 0, 0, 1, 1, 1, 9, 24, 25)
+
+    with pytest.raises(ValueError, match="Too many bitplanes"):
+        parse_packed_picture(bytes(data))
