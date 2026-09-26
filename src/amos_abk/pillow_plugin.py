@@ -61,10 +61,14 @@ class AmosAbkFile(ImageFile.ImageFile):
 
     def _open(self):
         self.fp.seek(0)
-        abk = _load_abk(BytesIO(self.fp.read()))
+        # Pillow only turns SyntaxError into UnidentifiedImageError
+        try:
+            abk = _load_abk(BytesIO(self.fp.read()))
+            self._frames = _build_frames(abk)
+        except ValueError as exc:
+            raise SyntaxError(str(exc)) from exc
         self.info["abk"] = abk
 
-        self._frames = _build_frames(abk)
         if not self._frames:
             raise SyntaxError("No image data in ABK file")
 

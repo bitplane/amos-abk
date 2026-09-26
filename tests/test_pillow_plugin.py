@@ -85,6 +85,13 @@ def test_non_image_bank_raises():
         Image.open(DATA_DIR / "music.abk")
 
 
+@pytest.mark.parametrize("name", ["pacpic.abk", "multi_sprites.abk", "basic.abk"])
+def test_truncated_file_raises_unidentified(name):
+    raw = (DATA_DIR / name).read_bytes()
+    with pytest.raises(UnidentifiedImageError):
+        Image.open(BytesIO(raw[:60]))
+
+
 def test_images_from_path():
     imgs = amos_abk.images(DATA_DIR / "multi_sprites.abk")
     assert len(imgs) == 6
