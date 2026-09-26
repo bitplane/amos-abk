@@ -103,22 +103,16 @@ def test_load_compressed_raises(magic):
 
 
 def test_load_too_short():
-    from io import BytesIO
-
     with pytest.raises(ValueError, match="too short"):
         load(BytesIO(b"Am"))
 
 
 def test_load_unknown_magic():
-    from io import BytesIO
-
     with pytest.raises(ValueError, match="Unknown magic"):
         load(BytesIO(b"\x00\x00\x00\x00"))
 
 
 def test_load_from_bytes_io():
-    from io import BytesIO
-
     raw = (DATA_DIR / "sprites.abk").read_bytes()
     abk = load(BytesIO(raw))
     assert len(abk.banks) == 1
