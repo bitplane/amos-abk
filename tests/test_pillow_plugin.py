@@ -1,3 +1,5 @@
+import struct
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -39,6 +41,23 @@ def test_seek_all_frames():
         img.load()
         assert img.size[0] > 0
         assert img.size[1] > 0
+
+
+def _sprite_bank(*sizes):
+    """A bare sprite bank of 1-plane images with the given (width_words, height) sizes."""
+    data = b"AmSp" + struct.pack(">H", len(sizes))
+    for w_words, h in sizes:
+        data += struct.pack(">HHHHH", w_words, h, 1, 0, 0) + b"\xff" * (w_words * 2 * h)
+    return data + bytes(64)
+
+
+def test_seek_updates_size():
+    img = Image.open(BytesIO(_sprite_bank((1, 1), (2, 3))))
+    assert img.size == (16, 1)
+    img.seek(1)
+    assert img.size == (32, 3)
+    img.seek(0)
+    assert img.size == (16, 1)
 
 
 def test_tell():

@@ -83,6 +83,8 @@ class AmosAbkFile(ImageFile.ImageFile):
         if not self._seek_check(frame):
             return
         self._frame = frame
+        self._size = self._frames[frame].size
+        self._mode = self._frames[frame].mode
 
     def tell(self):
         return self._frame
