@@ -152,3 +152,13 @@ def test_rejects_dangerous_sprite_dimensions(planes, message):
 def test_empty_zero_plane_slot_is_preserved():
     data = struct.pack(">HHHHHH", 1, 0, 0, 0, 0, 0) + bytes(64)
     assert parse_sprites(data)[0].to_indexed() == b""
+
+
+@pytest.mark.parametrize("planes", [6, 7, 8])
+def test_high_depth_sprite_requires_custom_colour_conversion(planes):
+    data = struct.pack(">HHHHHH", 1, 1, 1, planes, 0, 0) + b"\xff\xff" * planes + bytes(64)
+    sprite = parse_sprites(data)[0]
+    assert sprite.to_indexed() == bytes([(1 << planes) - 1]) * 16
+    for convert in (sprite.to_rgb, sprite.to_rgba, sprite.to_image):
+        with pytest.raises(ValueError, match="Unsupported sprite colour mode"):
+            convert()

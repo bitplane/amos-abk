@@ -18,6 +18,9 @@ Pac.Pic. colour conversion supports indexed screens and six-plane Extra
 Half-Brite (EHB). HAM, dual-playfield, and other unsupported high-depth modes
 raise `ValueError` during RGB/RGBA conversion (`OSError` through Pillow).
 Their raw bitplanes and indexed values remain available for custom decoding.
+Sprite and icon colour conversion supports up to five bitplanes (32 colours).
+Higher-depth images retain raw/indexed access but reject colour conversion:
+these banks do not store the screen mode needed to interpret those colours.
 
 ## Links
 

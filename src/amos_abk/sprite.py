@@ -33,6 +33,7 @@ class Sprite:
 
     def to_rgb(self) -> bytes:
         """Convert to RGB pixel data (3 bytes per pixel)."""
+        self._check_colour_mode()
         return indexed_to_rgb(self.to_indexed(), self.palette)
 
     def to_rgba(self) -> bytes:
@@ -40,7 +41,13 @@ class Sprite:
 
         Palette index 0 is treated as transparent.
         """
+        self._check_colour_mode()
         return indexed_to_rgba(self.to_indexed(), self.palette)
+
+    def _check_colour_mode(self) -> None:
+        # These banks carry no screen mode, so EHB and HAM cannot be distinguished.
+        if self.num_planes > 5:
+            raise ValueError("Unsupported sprite colour mode: more than 5 bitplanes; use to_indexed()")
 
     def to_image(self) -> Image.Image:
         """Convert to a PIL Image (RGBA, palette index 0 is transparent)."""
