@@ -123,6 +123,10 @@ class AmosAbkFile(ImageFile.ImageFile):
                 raise OSError(str(exc)) from exc
             self.im = decoded.im
             self._loaded_frame = self._frame
+        if self._n_frames == 1 and self.fp is not None:
+            if self._exclusive_fp:
+                self.fp.close()
+            self.fp = None
         return Image.Image.load(self)
 
 

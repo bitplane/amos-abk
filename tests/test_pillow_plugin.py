@@ -176,3 +176,33 @@ def test_unsupported_display_mode_on_load():
         img.load()
     with pytest.raises(ValueError, match="HAM"):
         amos_abk.images(raw)
+
+
+def test_single_frame_load_closes_owned_file():
+    with Image.open(DATA_DIR / "pacpic.abk") as img:
+        fp = img.fp
+        img.load()
+        assert fp.closed
+        assert img.fp is None
+        img.load()
+        assert img.getpixel((0, 0))[-1] == 255
+
+
+def test_single_frame_load_preserves_caller_stream():
+    stream = BytesIO((DATA_DIR / "pacpic.abk").read_bytes())
+    with Image.open(stream) as img:
+        img.load()
+        assert img.fp is None
+        assert not stream.closed
+    assert not stream.closed
+
+
+def test_multiframe_load_and_close_lifecycle():
+    img = Image.open(DATA_DIR / "multi_sprites.abk")
+    fp = img.fp
+    img.load()
+    assert not fp.closed
+    img.seek(1)
+    img.load()
+    img.close()
+    assert fp.closed
