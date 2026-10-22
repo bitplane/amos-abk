@@ -11,6 +11,9 @@ Parses the container format and three image bank types:
 Non-image banks (Music, Samples, Amal, Datas) are loaded as raw `DataBank`
 objects.
 
+Binary stream inputs are consumed from their current position through EOF;
+they do not need to support seeking. Caller-owned streams remain open.
+
 Pac.Pic. colour conversion supports indexed screens and six-plane Extra
 Half-Brite (EHB). HAM, dual-playfield, and other unsupported high-depth modes
 raise `ValueError` during RGB/RGBA conversion (`OSError` through Pillow).

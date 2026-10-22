@@ -142,7 +142,8 @@ def load(source: str | Path | bytes | BinaryIO) -> AbkFile:
     Args:
         source: file path (str or Path), the file's bytes, or a readable
             binary stream positioned at the start of the bank data. Streams
-            are read from their current position and need not support seeking.
+            are consumed from their current position through EOF, including
+            bytes after an AmBs bank set, and need not support seeking.
 
     Returns:
         An AbkFile containing the parsed banks.
