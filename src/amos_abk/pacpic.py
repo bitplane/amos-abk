@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from amos_abk.planar import MAX_PLANES, indexed_to_rgb, indexed_to_rgba, planar_to_indexed
+from amos_abk.planar import MAX_PLANES, indexed_to_rgb, indexed_to_rgba, planar_to_indexed, validate_bitmap_size
 from amos_abk.sprite import _parse_palette
 
 # The magics are dates (12/03/1990 and 06/07/1963). The ALT variants have a
@@ -107,6 +107,7 @@ def _read_bitmap_header(data: bytes, packed_offset: int) -> tuple[int, int, int,
         raise ValueError(f"Invalid packed bitmap dimensions: {width_pixels}x{height}, {num_planes} planes")
     if num_planes > MAX_PLANES:
         raise ValueError(f"Too many bitplanes in packed bitmap: {num_planes} (maximum {MAX_PLANES})")
+    validate_bitmap_size(width_pixels, height, num_planes)
 
     decompressed_size = width_bytes * height * num_planes
     if decompressed_size > MAX_DECOMPRESSED_SIZE:

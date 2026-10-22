@@ -4,7 +4,8 @@ from __future__ import annotations
 
 # AGA tops out at 8 bitplanes, and one byte per indexed pixel can't hold more
 MAX_PLANES = 8
-MAX_PIXELS = 32 * 1024 * 1024
+# Bound both conversion time and RGB/RGBA buffers, not just bitplane storage.
+MAX_PIXELS = 4 * 1024 * 1024
 
 
 def validate_bitmap_size(width: int, height: int, num_planes: int) -> None:

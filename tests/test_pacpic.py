@@ -236,3 +236,10 @@ def test_unsupported_modes_allow_raw_access_but_reject_colour_conversion(flags, 
     for convert in (pic.to_rgb, pic.to_rgba, pic.to_image):
         with pytest.raises(ValueError, match="Unsupported Pac.Pic. display mode"):
             convert()
+
+
+def test_pixel_limit_applies_before_decompression():
+    # Only ~512 KiB of plane storage, but more than four million pixels.
+    data = struct.pack(">IHHHHHHII", 0x06071963, 0, 0, 512, 1025, 1, 1, 25, 26) + bytes(3)
+    with pytest.raises(ValueError, match="too large"):
+        parse_packed_picture(data)
