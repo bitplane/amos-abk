@@ -204,3 +204,35 @@ def test_rejects_overlapping_streams(rle, points):
     data = struct.pack(">IHHHHHHII", 0x06071963, 0, 0, 1, 1, 1, 1, rle, points) + bytes(3)
     with pytest.raises(ValueError, match="Invalid"):
         parse_packed_picture(data)
+
+
+def test_ehb_colours_and_opacity():
+    from dataclasses import replace
+
+    base = parse_packed_picture(load(DATA_DIR / "pacpic.abk").banks[0].data)
+    palette = [(0, 0, 0), (255, 136, 17)] + [(0, 0, 0)] * 30
+    pic = replace(
+        base,
+        width=8,
+        height=1,
+        num_planes=6,
+        flags=0x6200,
+        planes=[b"\xc0"] + [b"\x00"] * 4 + [b"\x80"],
+        palette=palette,
+    )
+    assert pic.to_indexed()[:2] == bytes([33, 1])
+    assert pic.to_rgb()[:6] == bytes([119, 68, 0, 255, 136, 17])
+    assert pic.to_rgba()[:8] == bytes([119, 68, 0, 255, 255, 136, 17, 255])
+    assert pic.to_image().getpixel((0, 0)) == (119, 68, 0)
+
+
+@pytest.mark.parametrize("flags, planes", [(0x6A00, 6), (0x4400, 4), (0x8200, 8), (0xE200, 6)])
+def test_unsupported_modes_allow_raw_access_but_reject_colour_conversion(flags, planes):
+    from dataclasses import replace
+
+    base = parse_packed_picture(load(DATA_DIR / "pacpic.abk").banks[0].data)
+    pic = replace(base, width=8, height=1, num_planes=planes, flags=flags, planes=[b"\x00"] * planes)
+    assert pic.to_indexed() == bytes(8)
+    for convert in (pic.to_rgb, pic.to_rgba, pic.to_image):
+        with pytest.raises(ValueError, match="Unsupported Pac.Pic. display mode"):
+            convert()

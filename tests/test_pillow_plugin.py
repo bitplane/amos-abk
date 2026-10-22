@@ -167,3 +167,12 @@ def test_seek_checks_size_before_changing_frame(monkeypatch):
         img.seek(1)
     assert img.tell() == 0
     assert img.size == (16, 1)
+
+
+def test_unsupported_display_mode_on_load():
+    raw = bytearray((DATA_DIR / "pacpic.abk").read_bytes())
+    struct.pack_into(">H", raw, 20 + 20, 0x6A00)
+    with Image.open(BytesIO(raw)) as img, pytest.raises(OSError, match="HAM"):
+        img.load()
+    with pytest.raises(ValueError, match="HAM"):
+        amos_abk.images(raw)

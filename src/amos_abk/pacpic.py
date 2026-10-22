@@ -56,15 +56,30 @@ class PackedPicture:
         return planar_to_indexed(self.planes, self.width, self.height)
 
     def to_rgb(self) -> bytes:
-        """Convert to RGB pixel data (3 bytes per pixel)."""
-        return indexed_to_rgb(self.to_indexed(), self.palette)
+        """Convert indexed or Extra Half-Brite data to RGB; reject unsupported modes."""
+        palette = self._render_palette()
+        return indexed_to_rgb(self.to_indexed(), palette)
+
+    def _render_palette(self) -> list[tuple[int, int, int]]:
+        if self.flags & 0x0800:
+            raise ValueError("Unsupported Pac.Pic. display mode: HAM")
+        if self.flags & 0x0400:
+            raise ValueError("Unsupported Pac.Pic. display mode: dual playfield")
+        if self.num_planes == 6 and not self.flags & 0x8000:
+            # EHB halves each 4-bit hardware component before expanding to 8 bits.
+            halfbrite = [tuple((c // 17 >> 1) * 17 for c in color) for color in self.palette[:32]]
+            return self.palette[:32] + halfbrite
+        if self.num_planes > 5:
+            raise ValueError(f"Unsupported Pac.Pic. display mode: {self.num_planes} bitplanes")
+        return self.palette
 
     def to_rgba(self) -> bytes:
         """Convert to RGBA pixel data (4 bytes per pixel).
 
         A packed picture is a full screen, so every pixel is opaque.
         """
-        return indexed_to_rgba(self.to_indexed(), self.palette, transparent_index=None)
+        palette = self._render_palette()
+        return indexed_to_rgba(self.to_indexed(), palette, transparent_index=None)
 
     def to_image(self) -> Image.Image:
         """Convert to a PIL Image (RGB)."""
