@@ -141,7 +141,8 @@ def load(source: str | Path | bytes | BinaryIO) -> AbkFile:
 
     Args:
         source: file path (str or Path), the file's bytes, or a readable
-            binary stream positioned at the start of the bank data.
+            binary stream positioned at the start of the bank data. Streams
+            are read from their current position and need not support seeking.
 
     Returns:
         An AbkFile containing the parsed banks.
@@ -153,7 +154,7 @@ def load(source: str | Path | bytes | BinaryIO) -> AbkFile:
     if isinstance(source, (bytes, bytearray, memoryview)):
         return _load_stream(BytesIO(source))
 
-    return _load_stream(source)
+    return _load_stream(BytesIO(source.read()))
 
 
 def _load_stream(stream: BinaryIO) -> AbkFile:

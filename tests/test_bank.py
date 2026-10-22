@@ -176,3 +176,30 @@ def test_load_stream_not_at_start():
 def test_repr():
     abk = load(DATA_DIR / "sprites.abk")
     assert "Sprites" in repr(abk)
+
+
+@pytest.mark.parametrize(
+    "names, bank_set",
+    [
+        (["sprites.abk"], False),
+        (["music.abk"], False),
+        (["music.abk", "samples.abk"], False),
+        (["sprites.abk", "music.abk", "icons.abk"], True),
+    ],
+)
+def test_load_nonseekable_stream(names, bank_set):
+    raw = b"".join((DATA_DIR / name).read_bytes() for name in names)
+    if bank_set:
+        raw = b"AmBs" + len(names).to_bytes(2, "big") + raw
+
+    class ReadableStream:
+        def __init__(self):
+            self.buffer = BytesIO(b"prefix" + raw)
+            self.buffer.read(6)
+
+        def read(self, size=-1):
+            return self.buffer.read(size)
+
+    stream = ReadableStream()
+    assert load(stream).banks == load(raw).banks
+    assert not stream.buffer.closed
