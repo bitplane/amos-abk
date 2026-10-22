@@ -140,3 +140,15 @@ def test_rejects_too_many_planes():
     data = struct.pack(">HHHHHH", 1, 1, 1, 9, 0, 0) + b"\xff\xff" * 9 + bytes(64)
     with pytest.raises(ValueError, match="Too many bitplanes"):
         parse_sprites(data)
+
+
+@pytest.mark.parametrize("planes, message", [(0, "at least one"), (1, "too large")])
+def test_rejects_dangerous_sprite_dimensions(planes, message):
+    data = struct.pack(">HHHHHH", 1, 65535, 65535, planes, 0, 0) + bytes(64)
+    with pytest.raises(ValueError, match=message):
+        parse_sprites(data)
+
+
+def test_empty_zero_plane_slot_is_preserved():
+    data = struct.pack(">HHHHHH", 1, 0, 0, 0, 0, 0) + bytes(64)
+    assert parse_sprites(data)[0].to_indexed() == b""

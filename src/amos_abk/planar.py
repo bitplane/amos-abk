@@ -4,6 +4,17 @@ from __future__ import annotations
 
 # AGA tops out at 8 bitplanes, and one byte per indexed pixel can't hold more
 MAX_PLANES = 8
+MAX_PIXELS = 32 * 1024 * 1024
+
+
+def validate_bitmap_size(width: int, height: int, num_planes: int) -> None:
+    """Bound pixel allocations while allowing empty sprite slots."""
+    if width < 0 or height < 0 or not 0 <= num_planes <= MAX_PLANES:
+        raise ValueError("Invalid bitmap dimensions or bitplane count")
+    if width and height and not num_planes:
+        raise ValueError("Nonempty bitmap must have at least one bitplane")
+    if width * height > MAX_PIXELS:
+        raise ValueError(f"Bitmap is too large: {width * height} pixels (maximum {MAX_PIXELS})")
 
 
 def planar_to_indexed(planes: list[bytes], width: int, height: int) -> bytes:
@@ -17,6 +28,7 @@ def planar_to_indexed(planes: list[bytes], width: int, height: int) -> bytes:
     Returns:
         One byte per pixel, each byte being a palette index.
     """
+    validate_bitmap_size(width, height, len(planes))
     width_bytes = (width + 7) // 8
     num_planes = len(planes)
     result = bytearray(width * height)

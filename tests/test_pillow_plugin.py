@@ -158,3 +158,12 @@ def test_decode_error_on_load_raises_oserror():
     img = Image.open(BytesIO(bytes(raw)))
     with pytest.raises(OSError, match="Truncated"):
         img.load()
+
+
+def test_seek_checks_size_before_changing_frame(monkeypatch):
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 16)
+    img = Image.open(BytesIO(_sprite_bank((1, 1), (2, 3))))
+    with pytest.raises(Image.DecompressionBombError):
+        img.seek(1)
+    assert img.tell() == 0
+    assert img.size == (16, 1)

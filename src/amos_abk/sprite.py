@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from amos_abk.planar import MAX_PLANES, indexed_to_rgb, indexed_to_rgba, planar_to_indexed
+from amos_abk.planar import MAX_PLANES, indexed_to_rgb, indexed_to_rgba, planar_to_indexed, validate_bitmap_size
 
 
 @dataclass
@@ -95,6 +95,7 @@ def parse_sprites(data: bytes) -> list[Sprite]:
             raise ValueError(f"Too many bitplanes in image {i}: {num_planes} (maximum {MAX_PLANES})")
 
         width = w_words * 16
+        validate_bitmap_size(width, h, num_planes)
         plane_size = w_words * 2 * h  # bytes per bitplane
         total_size = plane_size * num_planes
 

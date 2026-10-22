@@ -106,6 +106,7 @@ class AmosAbkFile(ImageFile.ImageFile):
     def seek(self, frame):
         if not self._seek_check(frame):
             return
+        Image._decompression_bomb_check(self._sources[frame][0])
         self._frame = frame
         self._size = self._sources[frame][0]
 
