@@ -128,13 +128,19 @@ def _decompress_bitmap(data: bytes, packed_offset: int) -> tuple[list[bytes], in
     stream_start = packed_offset + 24
     for stream_name, stream_offset in (("RLEDATA", rledata_offset), ("POINTS", points_offset)):
         absolute_offset = packed_offset + stream_offset
-        if absolute_offset < stream_start or absolute_offset >= len(data):
+        if absolute_offset <= stream_start or absolute_offset >= len(data):
             raise ValueError(f"Invalid {stream_name} offset: {stream_offset}")
+    if rledata_offset == points_offset:
+        raise ValueError("Invalid stream offsets: RLEDATA and POINTS overlap")
 
     # Stream positions (offsets are relative to packed bitmap header start)
-    picdata = memoryview(data)[packed_offset + 24 :]
-    rledata = memoryview(data)[packed_offset + rledata_offset :]
-    points = memoryview(data)[packed_offset + points_offset :]
+    # POINTS and RLEDATA can occur in either order; each ends at the next stream.
+    first, second = sorted((rledata_offset, points_offset))
+    ends = {24: first, first: second, second: len(data) - packed_offset}
+    view = memoryview(data)
+    picdata = view[packed_offset + 24 : packed_offset + ends[24]]
+    rledata = view[packed_offset + rledata_offset : packed_offset + ends[rledata_offset]]
+    points = view[packed_offset + points_offset : packed_offset + ends[points_offset]]
 
     # Initialise streams: first picdata and rledata bytes are read unconditionally
     pic_pos = 0

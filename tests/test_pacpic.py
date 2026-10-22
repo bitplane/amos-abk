@@ -150,7 +150,7 @@ def test_rejects_invalid_stream_offsets():
 
 def test_truncated_compressed_data_raises_value_error():
     data = bytearray(27)
-    struct.pack_into(">IHHHHHHII", data, 0, 0x06071963, 0, 0, 1, 1, 129, 1, 24, 25)
+    struct.pack_into(">IHHHHHHII", data, 0, 0x06071963, 0, 0, 1, 1, 129, 1, 25, 26)
 
     with pytest.raises(ValueError, match="Truncated Pac.Pic"):
         parse_packed_picture(bytes(data))
@@ -181,3 +181,26 @@ def test_rejects_too_many_planes():
 
     with pytest.raises(ValueError, match="Too many bitplanes"):
         parse_packed_picture(bytes(data))
+
+
+@pytest.mark.parametrize(
+    "rle_offset, points_offset, payload",
+    [
+        (25, 26, b"\x55\xc0\x00"),  # PICDATA cannot consume RLEDATA
+        (26, 25, b"\x55\x00\xc0"),  # PICDATA cannot consume POINTS
+        (25, 26, b"\x55\x00\x80"),  # RLEDATA cannot consume POINTS
+        (26, 25, b"\x55\x00\x00"),  # POINTS cannot consume RLEDATA
+    ],
+)
+def test_streams_cannot_read_into_neighbours(rle_offset, points_offset, payload):
+    height = 129 if payload == b"\x55\x00\x00" else 2
+    data = struct.pack(">IHHHHHHII", 0x06071963, 0, 0, 1, 1, height, 1, rle_offset, points_offset) + payload
+    with pytest.raises(ValueError, match="Truncated"):
+        parse_packed_picture(data)
+
+
+@pytest.mark.parametrize("rle, points", [(24, 26), (25, 25), (26, 24)])
+def test_rejects_overlapping_streams(rle, points):
+    data = struct.pack(">IHHHHHHII", 0x06071963, 0, 0, 1, 1, 1, 1, rle, points) + bytes(3)
+    with pytest.raises(ValueError, match="Invalid"):
+        parse_packed_picture(data)
