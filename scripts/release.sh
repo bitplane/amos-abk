@@ -1,8 +1,9 @@
 #!/bin/bash
 
+set -e -o pipefail
+
 source .venv/bin/activate
 
-# dirty
 VERSION=$(grep -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*=[[:space:]]*"([^"]+)".*/\1/')
 TAG_NAME=$(git describe --exact-match --tags HEAD)
 
@@ -17,4 +18,12 @@ if [ -z "$PYPI_TOKEN" ]; then
   exit 1
 fi
 
-python3 -m twine upload dist/* --user=__token__ --password="$PYPI_TOKEN"
+# Keep release builds separate from previous distributions. Use the project's
+# dist directory rather than /tmp, which may be a small RAM-backed filesystem.
+mkdir -p dist
+release_dir=$(mktemp -d dist/release.XXXXXXXX)
+trap 'rm -rf -- "$release_dir"' EXIT
+
+python3 -m build --outdir "$release_dir" .
+python3 -m twine check "$release_dir"/*
+python3 -m twine upload "$release_dir"/* --user=__token__ --password="$PYPI_TOKEN"
